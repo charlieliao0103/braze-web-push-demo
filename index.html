@@ -110,11 +110,11 @@
             results.className = '';
             results.textContent = 'Testing connection to Braze...';
 
-            fetch(`https://rest.iad-03.braze.com/users/identify`, {
+            fetch('https://rest.iad-03.braze.com/users/track', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer f512da0e-d48f-4f78-9e20-49d310b697bd`
+                    'Authorization': 'Bearer cd977a65-588a-4d02-b66a-dff2d9fb24d2'
                 },
                 body: JSON.stringify({
                     user_aliases: { external_id: 'test_user' },
