@@ -209,12 +209,28 @@
         // 6. Service Worker Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register(
-                window.brazeConfig.serviceWorker.path, 
-                { scope: window.brazeConfig.serviceWorker.scope }
+                '/sw.js', // Explicit path (was window.brazeConfig...)
+                { 
+                    scope: '/',
+                    updateViaCache: 'none' // Critical for Vercel
+                }
             ).then(registration => {
-                console.log('Service Worker registered:', registration);
+                console.log('SW registered:', registration);
+                
+                // Force immediate activation
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'activated') {
+                            console.log('New SW activated');
+                            window.location.reload(); // Refresh to apply
+                        }
+                    });
+                });
+                
             }).catch(error => {
-                console.error('Service Worker registration failed:', error);
+                console.error('SW registration failed:', error);
+                showAlert(`SW Error: ${error.message}`, 'error');
             });
         }
 
