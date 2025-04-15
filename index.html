@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Braze Integration Solution</title>
+  <title>Braze Web Push Integration</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -37,10 +37,10 @@
     }
   </style>
 
-  <!-- Braze Loader -->
+  <!-- Load Braze Web SDK -->
   <script>
     (function(){
-      var brazeLoader = document.createElement('script');
+      const brazeLoader = document.createElement('script');
       brazeLoader.src = 'https://js.appboycdn.com/web-sdk/5.8/braze.min.js';
       brazeLoader.async = true;
       brazeLoader.onload = function() {
@@ -55,7 +55,7 @@
 </head>
 <body>
   <div id="container">
-    <h1>Braze Integration</h1>
+    <h1>Braze Web Push Integration</h1>
     <div id="status" class="info">Initializing Braze...</div>
 
     <h2>Add New User</h2>
@@ -92,7 +92,7 @@
           serviceWorkerLocation: '/sw.js',
           enableLogging: brazeConfig.enableLogging,
           sessionTimeoutInSeconds: 30,
-          noCookies: true
+          noCookies: false // Allow cookies for tracking if needed
         });
 
         braze.subscribeToSdkAuthenticationFailures(error => {
@@ -122,69 +122,50 @@
 
     document.getElementById('userForm').addEventListener('submit', async function (e) {
       e.preventDefault();
-      const externalId = document.getElementById('externalId').value;
-      const firstName = document.getElementById('firstName').value;
-      const email = document.getElementById('email').value;
+      const externalId = document.getElementById('externalId').value.trim();
+      const firstName = document.getElementById('firstName').value.trim();
+      const email = document.getElementById('email').value.trim();
       const resultBox = document.getElementById('testResults');
 
-      resultBox.textContent = 'Submitting user info to Braze...';
-      resultBox.className = 'info';
-
-      // 1. Set user on Braze SDK
-      braze.changeUser(externalId);
-      braze.getUser().setFirstName(firstName);
-      braze.getUser().setEmail(email);
-
-      // 2. Request push notification permission
-      const permission = await braze.requestPushPermission();
-      if (permission === 'granted') {
-        braze.registerAppboyPushMessages();
-        console.log('✅ Push permission granted');
-      } else {
-        console.warn('🔕 Push permission denied:', permission);
+      if (!externalId || !firstName || !email) {
+        resultBox.textContent = '⚠️ All fields are required.';
+        resultBox.className = 'error';
+        return;
       }
 
-      // 3. Send user info to Braze backend via /users/track
+      resultBox.textContent = '⏳ Setting user and requesting push permission...';
+      resultBox.className = 'info';
+
       try {
-        const res = await fetch('https://sdk.iad-03.braze.com/users/track', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer f512da0e-d48f-4f78-9e20-49d310b697bd'
-          },
-          body: JSON.stringify({
-            attributes: [{
-              external_id: externalId,
-              first_name: firstName,
-              email: email,
-              signup_source: 'Web Form',
-              signup_time: new Date().toISOString()
-            }]
-          })
-        });
+        // Set user in Braze
+        braze.changeUser(externalId);
+        braze.getUser().setFirstName(firstName);
+        braze.getUser().setEmail(email);
 
-        const data = await res.json();
+        // Request push permission
+        const permission = await braze.requestPushPermission();
+        console.log('Push permission result:', permission);
 
-        if (res.status === 201) {
-          resultBox.textContent = '✅ User info successfully sent to Braze.';
+        if (permission === 'granted') {
+          braze.registerAppboyPushMessages();
+          resultBox.textContent = '✅ User registered and push permission granted!';
           resultBox.className = 'success';
         } else {
-          console.warn('❌ Error:', data);
-          resultBox.textContent = `⚠️ Braze API error: ${res.status} ${JSON.stringify(data)}`;
+          resultBox.textContent = '⚠️ User info saved, but push permission was denied.';
           resultBox.className = 'error';
         }
       } catch (err) {
-        console.error('❌ Network error:', err);
-        resultBox.textContent = `❌ Network error: ${err.message}`;
+        console.error('Error during user setup:', err);
+        resultBox.textContent = `❌ Error: ${err.message}`;
         resultBox.className = 'error';
       }
     });
 
-    // Optional: Register service worker for push
+    // Optional: Register service worker for web push
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then(() => console.log('✅ Service Worker registered'))
-        .catch(err => console.error('SW registration failed:', err));
+        .catch(err => console.error('Service Worker registration failed:', err));
     }
   </script>
 </body>
