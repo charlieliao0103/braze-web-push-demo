@@ -1,133 +1,85 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Braze User Login Fix</title>
-    <!-- Braze Web SDK -->
+    <title>Braze Initialization Fix</title>
+    <!-- Braze Configuration -->
     <script type="text/javascript">
-        // Initialize Braze only once
         window.brazeConfig = {
-            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
-            endpoint: 'sdk.iad-03.braze.com'
+            apiKey: 'YOUR_API_KEY',
+            endpoint: 'YOUR_SDK_ENDPOINT',
+            enableLogging: true
         };
     </script>
-    <script async src="https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js"></script>
 </head>
 <body>
     <div id="loginSection">
         <h2>User Login</h2>
         <input type="text" id="userId" placeholder="User ID" required>
         <input type="email" id="userEmail" placeholder="Email" required>
-        <button onclick="loginUser()">Login</button>
-    </div>
-
-    <div id="pushSection" style="display:none;">
-        <h2>Push Notifications</h2>
-        <button onclick="requestPushPermission()">Enable Push Notifications</button>
+        <button id="loginButton" disabled>Login</button>
+        <p id="status">Initializing Braze SDK...</p>
     </div>
 
     <script>
-        // Debugging setup
-        console.log('Initializing Braze integration...');
-        
-        // Wait for Braze SDK to load
-        let brazeInitialized = false;
-        const initBraze = setInterval(() => {
-            if (typeof braze !== 'undefined' && !brazeInitialized) {
-                clearInterval(initBraze);
-                brazeInitialized = true;
-                
+        // Braze Initialization Promise
+        const brazeInitialization = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js';
+            script.async = true;
+            
+            script.onload = () => {
                 braze.initialize(window.brazeConfig.apiKey, {
                     baseUrl: window.brazeConfig.endpoint,
-                    enableLogging: true,
-                    allowUserSuppliedJavascript: true,
+                    enableLogging: window.brazeConfig.enableLogging,
                     serviceWorkerLocation: "/service-worker.js"
                 });
                 
                 braze.openSession();
-                console.log('Braze initialized successfully!');
-                braze.automaticallyShowInAppMessages();
-            }
-        }, 100);
+                console.log('Braze SDK initialized');
+                document.getElementById('status').textContent = 'Ready to login!';
+                document.getElementById('loginButton').disabled = false;
+                resolve();
+            };
 
-        // User login function with error handling
+            script.onerror = () => {
+                reject(new Error('Failed to load Braze SDK'));
+            };
+
+            document.head.appendChild(script);
+        });
+
+        // Login function with initialization check
         async function loginUser() {
             try {
-                console.log('Login button clicked');
-                
+                // Wait for SDK initialization
+                await brazeInitialization;
+
                 const userId = document.getElementById('userId').value;
                 const userEmail = document.getElementById('userEmail').value;
-                console.log('Input values:', { userId, userEmail });
 
                 if (!userId || !userEmail) {
                     throw new Error('Please fill in all fields');
                 }
 
-                if (!brazeInitialized) {
-                    throw new Error('Braze SDK not initialized yet');
-                }
-
-                // Identify user
-                console.log('Changing user:', userId);
+                // Braze operations
                 braze.changeUser(userId);
-                
-                // Set user attributes
-                console.log('Setting user attributes');
                 braze.getUser().setEmail(userEmail);
-                
-                // Log custom event
-                console.log('Logging custom event');
                 braze.logCustomEvent("user_login", {
                     login_method: "email",
-                    timestamp: new Date().toISOString()
+                    user_id: userId
                 });
 
-                // Show push section
-                document.getElementById('pushSection').style.display = 'block';
-                console.log('Login successful, push section visible');
+                alert('Login successful! Data sent to Braze.');
+                console.log('Braze user:', braze.getUser());
                 
-                // Force sync data with Braze servers
-                braze.requestImmediateDataFlush();
-                
-                alert('Login successful! Check browser console for details.');
             } catch (error) {
-                console.error('Login error:', error);
+                console.error('Login failed:', error);
                 alert(`Error: ${error.message}`);
             }
         }
 
-        // Push Notification Handling
-        function requestPushPermission() {
-            try {
-                if (!braze.isPushSupported()) {
-                    throw new Error('Push notifications not supported in this browser');
-                }
-
-                braze.requestPushPermission((permission) => {
-                    if (permission === braze.PushPermission.GRANTED) {
-                        braze.getUser().setPushNotificationSubscriptionType(
-                            braze.NotificationSubscriptionType.OPTED_IN
-                        );
-                        alert('Push notifications enabled!');
-                    } else {
-                        alert('Push permission denied');
-                    }
-                });
-            } catch (error) {
-                console.error('Push error:', error);
-                alert(`Error: ${error.message}`);
-            }
-        }
-
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('Service Worker registered:', registration);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-        }
+        // Assign login function to button
+        document.getElementById('loginButton').onclick = loginUser;
     </script>
 </body>
 </html>
