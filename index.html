@@ -112,7 +112,7 @@
             results.className = '';
             results.textContent = 'Testing connection to Braze...';
 
-            fetch(`https://${brazeConfig.sendEndpoint}/users/identify`, {
+            fetch(`${brazeConfig.sendEndpoint}/users/identify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
