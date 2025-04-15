@@ -116,7 +116,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${brazeConfig.sendApiKey}`
+                    'Authorization': `Bearer ${brazeConfig.apiKey}`
                 },
                 body: JSON.stringify({
                     user_aliases: { external_id: 'test_user123' },
