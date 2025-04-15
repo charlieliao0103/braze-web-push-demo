@@ -63,8 +63,9 @@
 
     <script>
         const brazeConfig = {
-            apiKey: 'f512da0e-d48f-4f78-9e20-49d310b697bd',
+            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
             endpoint: 'sdk.iad-03.braze.com',
+            sendApiKey: 'f512da0e-d48f-4f78-9e20-49d310b697bd'
             enableLogging: true
         };
 
@@ -114,7 +115,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${brazeConfig.apiKey}`
+                    'Authorization': `Bearer ${brazeConfig.sendApiKey}`
                 },
                 body: JSON.stringify({
                     user_aliases: { external_id: 'test_user123' },
