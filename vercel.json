@@ -1,21 +1,21 @@
 {
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
+    "headers": [
         {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        },
-        {
-          "key": "Cache-Control",
-          "value": "no-store"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
+            "source": "/sw.js",
+            "headers": [
+                {
+                    "key": "Service-Worker-Allowed",
+                    "value": "/"
+                },
+                {
+                    "key": "Content-Type",
+                    "value": "application/javascript"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store"
+                }
+            ]
         }
-      ]
-    }
-  ]
+    ]
 }
