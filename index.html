@@ -139,7 +139,8 @@
                     results.textContent = '✅ Successfully connected to Braze API';
                     results.className = 'success';
                 } else {
-                    results.textContent = `⚠️ Received unexpected status: ${response.status} ${response.text()}`;
+                    const errorText = await response.text(); // await here
+                    results.textContent = `⚠️ Received unexpected status: ${response.status} ${errorText}`;
                     results.className = 'error';
                 }
             })
