@@ -13,7 +13,7 @@
                 },
                 {
                     "key": "Cache-Control",
-                    "value": "no-store"
+                    "value": "max-age=0, no-cache, no-store, must-revalidate"
                 }
             ]
         }
