@@ -1,121 +1,82 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Braze Service Worker Fix</title>
-    <!-- Service Worker Registration Meta -->
-    <meta name="braze-service-worker" content="/service-worker.js">
-    <meta name="braze-service-worker-scope" content="/">
-    
-    <!-- Braze SDK -->
-    <script type="text/javascript">
-        +function(a,p,P,b,y){a.braze={};a.brazeQueue=[];for(var s="BrazeSdkMetadata DeviceProperties Card ...".split(" "),i=0;i<s.length;i++){/* full loader script */}}(window,document,'script');
+    <title>Braze Service Worker Test</title>
+    <script>
+        // Braze Loader
+        +function(a,p,P,b,y){a.braze={};a.brazeQueue=[];for(var s="BrazeSdkMetadata ...".split(" "),i=0;i<s.length;i++){/* full loader script */}}(window,document,'script');
     </script>
-    
-    <!-- Configuration -->
-    <script type="text/javascript">
-        window.brazeConfig = {
+    <script>
+        // Configuration
+        const config = {
             apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
             endpoint: 'sdk.iad-03.braze.com',
-            serviceWorker: {
-                path: '/service-worker.js',
-                scope: '/',
-                version: 'v2.1.0',
-                cacheName: 'braze-sw-cache'
-            }
+            swPath: '/service-worker.js',
+            swScope: '/'
         };
+
+        // Initialize Braze
+        document.addEventListener('braze.SDKLoaded', async () => {
+            try {
+                // Service Worker Registration
+                if ('serviceWorker' in navigator) {
+                    const reg = await navigator.serviceWorker.register(config.swPath, {
+                        scope: config.swScope,
+                        updateViaCache: 'none'
+                    });
+                    console.log('SW registered:', reg);
+                    
+                    reg.addEventListener('updatefound', () => {
+                        console.log('SW update detected');
+                    });
+                }
+
+                // Braze Initialization
+                braze.initialize(config.apiKey, {
+                    baseUrl: config.endpoint,
+                    serviceWorkerLocation: config.swPath,
+                    enableLogging: true
+                });
+                
+                braze.openSession();
+                console.log('Braze initialized');
+
+            } catch (error) {
+                console.error('Initialization failed:', error);
+            }
+        });
     </script>
 </head>
 <body>
-    <div id="sw-status">
-        <h3>Service Worker Status</h3>
-        <pre id="sw-log"></pre>
-        <button onclick="unregisterSW()">Unregister Service Workers</button>
-        <button onclick="checkUpdate()">Check for Updates</button>
-    </div>
+    <h1>Service Worker Test</h1>
+    <div id="status">Initializing...</div>
+    
+    <button onclick="testPush()">Test Push Notification</button>
+    <button onclick="unregisterSW()">Unregister SW</button>
 
     <script>
-        // Service Worker Registration
-        function registerServiceWorker() {
-            if (!('serviceWorker' in navigator)) {
-                logSWStatus('Service Workers not supported');
+        // Test functionality
+        async function testPush() {
+            if (!braze.isPushSupported()) {
+                alert('Push not supported');
                 return;
             }
-
-            navigator.serviceWorker.register(window.brazeConfig.serviceWorker.path, {
-                scope: window.brazeConfig.serviceWorker.scope,
-                updateViaCache: 'none'
-            }).then(registration => {
-                logSWStatus('Registration successful');
-                registration.addEventListener('updatefound', () => {
-                    const newWorker = registration.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        logSWStatus(`State changed to: ${newWorker.state}`);
-                    });
-                });
-                
-                // Check for immediate update
-                registration.update();
-            }).catch(error => {
-                logSWStatus(`Registration failed: ${error.message}`);
-            });
-
-            // Listen for controller changes
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                logSWStatus('Controller changed - reloading');
-                window.location.reload();
-            });
-        }
-
-        // Service Worker Debugging Tools
-        function logSWStatus(message) {
-            const logElement = document.getElementById('sw-log');
-            logElement.textContent += `[${new Date().toISOString()}] ${message}\n`;
+            
+            const permission = await braze.requestPushPermission();
+            alert(`Push status: ${permission}`);
         }
 
         async function unregisterSW() {
             const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) {
-                await registration.unregister();
-                logSWStatus(`Unregistered: ${registration.scope}`);
-            }
+            for (let reg of registrations) await reg.unregister();
+            alert('Service Workers unregistered');
+            location.reload();
         }
 
-        async function checkUpdate() {
-            const registration = await navigator.serviceWorker.getRegistration();
-            if (registration) {
-                await registration.update();
-                logSWStatus('Update check completed');
-            }
-        }
-
-        // Initialize Service Worker
-        document.addEventListener('braze.SDKLoaded', () => {
-            braze.initialize(window.brazeConfig.apiKey, {
-                baseUrl: window.brazeConfig.endpoint,
-                serviceWorkerLocation: window.brazeConfig.serviceWorker.path,
-                serviceWorkerVersion: window.brazeConfig.serviceWorker.version
-            });
-            
-            registerServiceWorker();
-            setupSWLifecycle();
+        // Live status updates
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            document.getElementById('status').textContent = 'SW Controller Changed';
         });
-
-        // Lifecycle Management
-        function setupSWLifecycle() {
-            // Periodic updates every 24 hours
-            setInterval(() => {
-                navigator.serviceWorker.getRegistration().then(registration => {
-                    if (registration) registration.update();
-                });
-            }, 86400000);
-
-            // Handle messages from service worker
-            navigator.serviceWorker.addEventListener('message', event => {
-                if (event.data.type === 'braze-sw-status') {
-                    logSWStatus(`SW Message: ${event.data.message}`);
-                }
-            });
-        }
     </script>
 </body>
-</style>
+</html>
