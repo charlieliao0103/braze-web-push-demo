@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Braze Web Push Demo</title>
+  <script type="text/javascript" src="https://js.appboycdn.com/web-sdk/4.5/appboy.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      background-color: #007aff;
+      color: white;
+      border-radius: 5px;
+    }
+    #status {
+      margin-top: 20px;
+      font-size: 16px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Braze Web Push Demo</h1>
+  <button id="subscribe">Enable Push Notifications</button>
+  <div id="status"></div>
+
+  <script>
+    const BRAZE_API_KEY = "YOUR-API-KEY-HERE"; // Replace with your Braze API key
+    const BRAZE_ENDPOINT = "YOUR-ENDPOINT-HERE"; // e.g. sdk.iad-01.braze.com
+    const VAPID_KEY = "YOUR-VAPID-PUBLIC-KEY-HERE";
+
+    const statusEl = document.getElementById("status");
+
+    appboy.initialize(BRAZE_API_KEY, {
+      baseUrl: "https://" + BRAZE_ENDPOINT,
+      enableLogging: true
+    });
+
+    appboy.display.automaticallyShowNewInAppMessages();
+
+    document.getElementById("subscribe").addEventListener("click", async () => {
+      try {
+        await appboy.registerAppboyPushMessages(VAPID_KEY);
+        appboy.openSession();
+        statusEl.innerText = "Push subscription successful!";
+      } catch (e) {
+        statusEl.innerText = "Failed to subscribe: " + e.message;
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
