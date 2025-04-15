@@ -1,33 +1,30 @@
 const CACHE_NAME = 'braze-sw-v1';
+const CACHE_URLS = [
+  'https://js.appboycdn.com/web-sdk/5.8/braze.min.js',
+  '/notification-icon.png'
+];
 
-// Installation
 self.addEventListener('install', (event) => {
-    console.log('SW installing');
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.addAll(['/']))
-            .then(() => self.skipWaiting())
-    );
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(CACHE_URLS))
+  );
 });
 
-// Activation
-self.addEventListener('activate', (event) => {
-    console.log('SW activated');
-    event.waitUntil(self.clients.claim());
+self.addEventListener('fetch', (event) => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
 });
 
-// Push Notifications
 self.addEventListener('push', (event) => {
-    console.log('Push received:', event.data.text());
-    event.waitUntil(
-        self.registration.showNotification('Test Notification', {
-            body: 'Service Worker is working!',
-            icon: '/icon.png'
-        })
-    );
-});
-
-// Message Handling
-self.addEventListener('message', (event) => {
-    console.log('SW received message:', event.data);
+  const data = event.data.json();
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/notification-icon.png',
+      data: { url: data.url }
+    })
+  );
 });
