@@ -1,4 +1,4 @@
-const CACHE_NAME = 'braze-final-v2';
+const CACHE_NAME = 'braze-sw-final-v1';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -20,15 +20,10 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Modified fetch handler
 self.addEventListener('fetch', (event) => {
-    // Bypass all Braze-related requests
     if (event.request.url.includes('braze.com')) {
-        event.respondWith(fetch(event.request));
         return;
     }
-    
-    // Cache-first strategy for local assets
     event.respondWith(
         caches.match(event.request)
             .then(response => response || fetch(event.request))
