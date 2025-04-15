@@ -3,9 +3,18 @@
         {
             "source": "/sw.js",
             "headers": [
-                {"key": "Service-Worker-Allowed", "value": "/"},
-                {"key": "Content-Type", "value": "application/javascript"},
-                {"key": "Cache-Control", "value": "no-store"}
+                {
+                    "key": "Service-Worker-Allowed",
+                    "value": "/"
+                },
+                {
+                    "key": "Content-Type",
+                    "value": "application/javascript"
+                },
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store"
+                }
             ]
         }
     ]
