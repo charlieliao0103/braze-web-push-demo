@@ -146,11 +146,11 @@
 
       // 3. Send user info to Braze backend via /users/track
       try {
-        const res = await fetch('https://rest.iad-03.braze.com/users/track', {
+        const res = await fetch('https://sdk.iad-03.braze.com/users/track', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer f512da0e-d48f-4f78-9e20-49d310b697bd'
+            'Authorization': 'Bearer 84e848cb-2923-4629-bd23-e6e4155615bd'
           },
           body: JSON.stringify({
             attributes: [{
