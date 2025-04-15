@@ -1,36 +1,30 @@
-const CACHE_NAME = 'braze-sw-final-v4';
-const BRAZE_ENDPOINT = 'sdk.iad-03.braze.com';
+// Import Braze Service Worker first
+importScripts('https://js.appboycdn.com/web-sdk/5.8/service-worker.js');
 
-self.addEventListener('install', (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then(cache => cache.add('/'))
-            .then(() => self.skipWaiting())
-    );
+const CACHE_NAME = 'braze-sw-v1';
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(['/']))
+      .then(() => self.skipWaiting())
+  );
 });
 
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames
-                    .filter(name => name !== CACHE_NAME)
-                    .map(name => caches.delete(name))
-            );
-        })
-    );
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(keys => 
+      Promise.all(keys.map(key => 
+        key !== CACHE_NAME ? caches.delete(key) : null
+      ))
+    )
+  );
 });
 
-self.addEventListener('fetch', (event) => {
-    // Bypass all Braze API requests
-    if (event.request.url.includes(BRAZE_ENDPOINT)) {
-        event.respondWith(fetch(event.request));
-        return;
-    }
-    
-    // Cache-first strategy for local assets
-    event.respondWith(
-        caches.match(event.request)
-            .then(response => response || fetch(event.request))
-    );
+// Delegate to Braze's fetch handler
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
 });
