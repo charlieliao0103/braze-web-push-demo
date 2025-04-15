@@ -1,379 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
-<!-- Add before </head> -->
-<meta http-equiv="Content-Security-Policy" 
-      content="default-src 'self';
-               connect-src 'self' https://*.braze.com;
-               script-src 'self' 'unsafe-inline' https://js.appboycdn.com;
-               worker-src 'self' blob:;
-               style-src 'self' 'unsafe-inline';
-               img-src 'self' data: https://cdn.appboy.com;">
-    <head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braze Integration Solution</title>
+    <title>Braze Final Solution</title>
+    <meta http-equiv="Content-Security-Policy" 
+          content="default-src 'self';
+                   connect-src 'self' https://*.braze.com;
+                   script-src 'self' 'unsafe-inline' https://js.appboycdn.com;
+                   worker-src 'self' blob:;
+                   style-src 'self' 'unsafe-inline'">
     
-    <!-- Braze Loader with Fallback -->
+    <!-- Braze Loader -->
     <script>
         (function(){
             var brazeLoader = document.createElement('script');
-            brazeLoader.type = 'text/javascript';
-            brazeLoader.async = true;
             brazeLoader.src = 'https://js.appboycdn.com/web-sdk/5.8/braze.min.js';
-            
-            brazeLoader.onerror = function() {
-                console.error('Braze SDK load failed');
-                document.getElementById('initStatus').textContent = 'SDK Load Failed - Retrying...';
-                setTimeout(() => document.head.appendChild(brazeLoader.cloneNode()), 3000);
-            };
-
+            brazeLoader.async = true;
             document.head.appendChild(brazeLoader);
         })();
     </script>
 
-    <!-- Braze Configuration -->
+    <!-- Configuration -->
     <script type="text/javascript">
         window.brazeConfig = {
-            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',          // Replace with actual key
-            endpoint: 'sdk.iad-03.braze.com',    // e.g., sdk.iad-03.braze.com
-            enableLogging: true,
-            serviceWorker: {
-                path: '/sw.js',
-                scope: '/'
-            },
-            initializationTimeout: 10000      // 10 seconds
+            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
+            endpoint: 'sdk.iad-03.braze.com',
+            enableLogging: true
         };
     </script>
 </head>
 <body>
-    <div id="brazeContainer">
+    <div id="container">
         <h1>Braze Integration</h1>
-        <div id="initStatus" class="status-box loading">Initializing Braze SDK...</div>
+        <div id="status">Initializing...</div>
         
-        <div class="content-section">
-            <h2>User Login</h2>
-            <input type="text" id="userId" placeholder="User ID" required>
-            <input type="email" id="userEmail" placeholder="Email" required>
-            <button id="loginBtn" disabled>Login</button>
-        </div>
-
-        <div class="network-tools">
-            <button onclick="testNetworkConnection()">Test Network Connection</button>
-            <pre id="networkStatus"></pre>
+        <div class="section">
+            <h2>Connection Test</h2>
+            <button onclick="runConnectionTest()">Test Connection</button>
+            <div id="testResults"></div>
         </div>
     </div>
 
     <script>
-        // Style Configuration
-        const styles = {
-            statusBox: {
-                padding: '15px',
-                margin: '10px 0',
-                borderRadius: '5px',
-                fontFamily: 'Arial, sans-serif'
-            },
-            colors: {
-                loading: '#2196F3',
-                success: '#4CAF50',
-                error: '#F44336',
-                warning: '#FF9800'
-            }
-        };
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(reg => {
+                        console.log('SW registered');
+                        reg.update();
+                    })
+                    .catch(err => console.error('SW registration failed:', err));
+            });
+        }
 
-        // Initialize State Manager
-        let brazeInitialized = false;
-        const initTimeout = window.brazeConfig.initializationTimeout;
-
-        // 1. SDK Load Handler
-        document.addEventListener('braze.SDKLoaded', async () => {
-            try {
-                updateStatus('SDK Loaded - Initializing...', 'loading');
-                
-                // Network Pre-check
-                if (!await testConnection()) {
-                    throw new Error('Braze endpoint unreachable');
-                }
-
-                // Initialize Braze
-                braze.initialize(window.brazeConfig.apiKey, {
-                    baseUrl: `https://${window.brazeConfig.endpoint}`,
-                    enableLogging: window.brazeConfig.enableLogging,
-                    serviceWorkerLocation: window.brazeConfig.serviceWorker.path,
-                    noCookies: false,
-                    sessionTimeoutInSeconds: 30,
-                    enableHtmlInAppMessages: true
-                });
-
-                // Verify Initialization
-                await verifyInitialization();
-                braze.openSession();
-                
-                updateStatus('Braze Initialized Successfully', 'success');
-                enableLogin();
-                startHeartbeat();
-
-            } catch (error) {
-                handleInitError(error);
-            }
+        // Braze Initialization
+        document.addEventListener('braze.SDKLoaded', () => {
+            braze.initialize(window.brazeConfig.apiKey, {
+                baseUrl: `https://${window.brazeConfig.endpoint}`,
+                serviceWorkerLocation: '/sw.js',
+                enableLogging: true
+            });
+            
+            braze.openSession();
+            document.getElementById('status').textContent = 'Ready';
         });
 
-        // 2. Initialization Verification
-        async function verifyInitialization() {
-            return new Promise((resolve, reject) => {
-                const checkInterval = setInterval(() => {
-                    if (braze.isInitialized()) {
-                        clearInterval(checkInterval);
-                        resolve();
-                    }
-                }, 100);
-
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    reject(new Error(`Initialization timed out after ${initTimeout}ms`));
-                }, initTimeout);
-            });
-        }
-
-        // 3. Network Connection Test
-        async function testConnection() {
+        // Connection Test
+        async function runConnectionTest() {
+            const results = document.getElementById('testResults');
+            results.innerHTML = '';
+            
+            // Test Braze Connection
             try {
                 const response = await fetch(`https://${window.brazeConfig.endpoint}/healthz`);
-                return response.ok;
+                results.innerHTML += `<div class="test-success">✅ Connected to Braze servers</div>`;
             } catch (error) {
-                return false;
+                results.innerHTML += `<div class="test-fail">❌ Connection failed: ${error.message}</div>`;
             }
         }
-
-        // 4. User Login Handler
-        async function handleLogin() {
-            const userId = document.getElementById('userId').value.trim();
-            const userEmail = document.getElementById('userEmail').value.trim();
-
-            if (!userId || !userEmail) {
-                showAlert('Please fill in all fields', 'warning');
-                return;
-            }
-
-            try {
-                braze.changeUser(userId);
-                braze.getUser().setEmail(userEmail);
-                braze.logCustomEvent('user_login', {
-                    login_method: 'email',
-                    user_id: userId
-                });
-                
-                braze.requestImmediateDataFlush();
-                showAlert('Login successful! Data sent to Braze.', 'success');
-                
-            } catch (error) {
-                showAlert(`Login failed: ${error.message}`, 'error');
-            }
-        }
-
-        // 5. Utility Functions
-        function updateStatus(text, type) {
-            const statusEl = document.getElementById('initStatus');
-            statusEl.textContent = text;
-            statusEl.style.backgroundColor = styles.colors[type] || '#ffffff';
-            console.log(`Status Update: ${text}`);
-        }
-
-        function enableLogin() {
-            document.getElementById('loginBtn').disabled = false;
-            document.getElementById('loginBtn').addEventListener('click', handleLogin);
-        }
-
-        function startHeartbeat() {
-            setInterval(() => {
-                braze.logCustomEvent('heartbeat', {
-                    timestamp: Date.now()
-                });
-            }, 300000); // 5 minutes
-        }
-
-        function handleInitError(error) {
-            console.error('Initialization Error:', error);
-            updateStatus(`Initialization Failed: ${error.message}`, 'error');
-            document.getElementById('loginBtn').disabled = true;
-        }
-
-        function testNetworkConnection() {
-            testConnection().then(success => {
-                document.getElementById('networkStatus').textContent = 
-                    success ? '✅ Connection successful' : '❌ Connection failed';
-            });
-        }
-
-        function showAlert(message, type) {
-            const alertBox = document.createElement('div');
-            alertBox.textContent = message;
-            alertBox.style.backgroundColor = styles.colors[type];
-            alertBox.style.padding = '10px';
-            alertBox.style.margin = '10px 0';
-            document.body.appendChild(alertBox);
-            setTimeout(() => alertBox.remove(), 3000);
-        }
-
-        // 6. Service Worker Registration
-        // Replace existing registration code with:
-        if ('serviceWorker' in navigator) {
-          window.addEventListener('load', async () => {
-            try {
-              const registration = await navigator.serviceWorker.register('/sw.js', {
-                scope: '/',
-                updateViaCache: 'none'
-              });
-        
-              // Force immediate activation
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'activated') {
-                    console.log('New service worker activated');
-                    window.location.reload();
-                  }
-                });
-              });
-        
-              if (registration.active) {
-                console.log('Service worker active');
-              }
-            } catch (error) {
-              console.error('Registration failed:', error);
-              document.getElementById('initStatus').textContent = 
-                `SW Error: ${error.message}`;
-            }
-          });
-        }
-        // 7. Initialization Timeout Fallback
-        setTimeout(() => {
-            if (!brazeInitialized) {
-                handleInitError(new Error('Initialization timeout - Check network connection'));
-            }
-        }, initTimeout + 2000);
     </script>
 
     <style>
-        .status-box {
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 5px;
-            color: white;
-            font-family: Arial, sans-serif;
+        #container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
         }
-        
-        .loading { background-color: #2196F3; }
-        .success { background-color: #4CAF50; }
-        .error { background-color: #F44336; }
-        .warning { background-color: #FF9800; }
-
-        .content-section {
+        .section {
             margin: 20px 0;
             padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            border: 1px solid #eee;
         }
-
-        input, button {
-            margin: 5px;
-            padding: 8px;
-            display: block;
+        .test-success {
+            color: green;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid green;
         }
-
-        .network-tools {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f5f5f5;
+        .test-fail {
+            color: red;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid red;
+        }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            background: #f0f0f0;
         }
     </style>
 </body>
-<div id="connectionTest">
-  <button onclick="runFullConnectionTest()">Run Diagnostic Test</button>
-  <div id="testResults"></div>
-</div>
-
-<script>
-async function runFullConnectionTest() {
-  const results = document.getElementById('testResults');
-  results.innerHTML = '<h3>Running Diagnostic Tests...</h3>';
-
-  // 1. Updated DNS Resolution Test
-  await testStep('DNS Resolution', async () => {
-    try {
-      const response = await fetch(`https://cloudflare-dns.com/dns-query?name=${window.brazeConfig.endpoint}&type=A`, {
-        headers: { 'Accept': 'application/dns-json' }
-      });
-      const data = await response.json();
-      return data.Answer?.length > 0;
-    } catch (error) {
-      console.error('DNS test failed:', error);
-      return false;
-    }
-  });
-
-  // 2. TCP Connection Test
-  await testStep('TCP Connection', async () => {
-    try {
-      const controller = new AbortController();
-      setTimeout(() => controller.abort(), 2000);
-      await fetch(`https://${window.brazeConfig.endpoint}/healthz`, {
-        signal: controller.signal
-      });
-      return true;
-    } catch {
-      return false;
-    }
-  });
-
-  // 3. API Key Validation
-  await testStep('API Key Validation', async () => {
-    try {
-      const response = await fetch(`https://${window.brazeConfig.endpoint}/users/segment`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${window.brazeConfig.apiKey}`
-        },
-        body: JSON.stringify({ segment_id: 'test' })
-      });
-      return response.status !== 401;
-    } catch {
-      return false;
-    }
-  });
-
-  // 4. Service Worker Verification
-  await testStep('Service Worker', async () => {
-    if (!('serviceWorker' in navigator)) return false;
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    return registrations.some(r => r.active);
-  });
-}
-
-async function testStep(name, testFn) {
-  const results = document.getElementById('testResults');
-  try {
-    const success = await testFn();
-    results.innerHTML += `
-      <div class="test-result ${success ? 'success' : 'fail'}">
-        ${name}: ${success ? '✅ Passed' : '❌ Failed'}
-      </div>
-    `;
-    return success;
-  } catch (error) {
-    results.innerHTML += `
-      <div class="test-result fail">
-        ${name}: ❌ Error (${error.message})
-      </div>
-    `;
-    return false;
-  }
-}
-</script>
-
-<style>
-.test-result { padding: 10px; margin: 5px; border-radius: 4px; }
-.success { background: #e8f5e9; border: 1px solid #4caf50; }
-.fail { background: #ffebee; border: 1px solid #f44336; }
-</style>
 </html>
