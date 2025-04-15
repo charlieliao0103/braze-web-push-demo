@@ -1,12 +1,10 @@
-self.addEventListener('push', event => {
+// service-worker.js
+self.addEventListener('push', function(event) {
     const data = event.data.json();
-    self.registration.showNotification(data.title, {
-        body: data.body,
-        icon: '/icon.png'
-    });
-});
-
-self.addEventListener('notificationclick', event => {
-    event.notification.close();
-    clients.openWindow('https://your-website.com');
+    event.waitUntil(
+        self.registration.showNotification(data.title, {
+            body: data.body,
+            icon: 'notification-icon.png'
+        })
+    );
 });
