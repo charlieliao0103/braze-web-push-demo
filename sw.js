@@ -1,4 +1,5 @@
-const CACHE_NAME = 'braze-sw-v3';
+const CACHE_NAME = 'braze-sw-final-v4';
+const BRAZE_ENDPOINT = 'sdk.iad-03.braze.com';
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -21,9 +22,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-    // Bypass Braze-related requests
-    if (event.request.url.includes('braze.com')) {
-        return fetch(event.request);
+    // Bypass all Braze API requests
+    if (event.request.url.includes(BRAZE_ENDPOINT)) {
+        event.respondWith(fetch(event.request));
+        return;
     }
     
     // Cache-first strategy for local assets
