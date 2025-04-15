@@ -260,4 +260,87 @@
         }
     </style>
 </body>
+<div id="connectionTest">
+  <button onclick="runFullConnectionTest()">Run Diagnostic Test</button>
+  <div id="testResults"></div>
+</div>
+
+<script>
+async function runFullConnectionTest() {
+  const results = document.getElementById('testResults');
+  results.innerHTML = '<h3>Running Diagnostic Tests...</h3>';
+
+  // 1. DNS Resolution Test
+  await testStep('DNS Resolution', async () => {
+    const response = await fetch(`https://dns.google/resolve?name=${window.brazeConfig.endpoint}`);
+    const data = await response.json();
+    if (data.Answer?.length > 0) return true;
+    return false;
+  });
+
+  // 2. TCP Connection Test
+  await testStep('TCP Connection', async () => {
+    try {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), 2000);
+      await fetch(`https://${window.brazeConfig.endpoint}/healthz`, {
+        signal: controller.signal
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  // 3. API Key Validation
+  await testStep('API Key Validation', async () => {
+    try {
+      const response = await fetch(`https://${window.brazeConfig.endpoint}/users/segment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${window.brazeConfig.apiKey}`
+        },
+        body: JSON.stringify({ segment_id: 'test' })
+      });
+      return response.status !== 401;
+    } catch {
+      return false;
+    }
+  });
+
+  // 4. Service Worker Verification
+  await testStep('Service Worker', async () => {
+    if (!('serviceWorker' in navigator)) return false;
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    return registrations.some(r => r.active);
+  });
+}
+
+async function testStep(name, testFn) {
+  const results = document.getElementById('testResults');
+  try {
+    const success = await testFn();
+    results.innerHTML += `
+      <div class="test-result ${success ? 'success' : 'fail'}">
+        ${name}: ${success ? '✅ Passed' : '❌ Failed'}
+      </div>
+    `;
+    return success;
+  } catch (error) {
+    results.innerHTML += `
+      <div class="test-result fail">
+        ${name}: ❌ Error (${error.message})
+      </div>
+    `;
+    return false;
+  }
+}
+</script>
+
+<style>
+.test-result { padding: 10px; margin: 5px; border-radius: 4px; }
+.success { background: #e8f5e9; border: 1px solid #4caf50; }
+.fail { background: #ffebee; border: 1px solid #f44336; }
+</style>
 </html>
