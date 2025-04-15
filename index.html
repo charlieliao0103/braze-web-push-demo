@@ -92,7 +92,7 @@
           serviceWorkerLocation: '/sw.js',
           enableLogging: brazeConfig.enableLogging,
           sessionTimeoutInSeconds: 30,
-          noCookies: false // Allow cookies for tracking if needed
+          noCookies: true // Allow cookies for tracking if needed
         });
 
         braze.subscribeToSdkAuthenticationFailures(error => {
