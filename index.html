@@ -110,7 +110,7 @@
             results.className = '';
             results.textContent = 'Testing connection to Braze...';
 
-            fetch(`https://${brazeConfig.endpoint}/users/identify`, {
+            fetch(`https://rest.iad-03.braze.com/users/identify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
