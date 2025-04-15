@@ -1,30 +1,25 @@
-const CACHE_NAME = 'braze-sw-v1';
-const CACHE_URLS = [
-  'https://js.appboycdn.com/web-sdk/5.8/braze.min.js',
-  '/notification-icon.png'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CACHE_URLS))
-  );
-});
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => response || fetch(event.request))
-  );
-});
-
-self.addEventListener('push', (event) => {
-  const data = event.data.json();
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/notification-icon.png',
-      data: { url: data.url }
-    })
-  );
-});
+// Modify the service worker registration block
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(
+        window.brazeConfig.serviceWorker.path, 
+        { 
+            scope: window.brazeConfig.serviceWorker.scope,
+            updateViaCache: 'none'  // Important for Vercel deployments
+        }
+    ).then(registration => {
+        console.log('SW registered:', registration);
+        
+        // Force immediate activation
+        registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated') {
+                    console.log('New SW activated');
+                    window.location.reload();
+                }
+            });
+        });
+    }).catch(error => {
+        console.error('SW registration failed:', error);
+    });
+}
