@@ -2,88 +2,116 @@
 <html>
 <head>
     <title>Braze Initialization Fix</title>
+    
+    <!-- Braze Loader Script with Error Handling -->
+    <script type="text/javascript">
+        (function() {
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            script.async = true;
+            script.src = 'https://js.appboycdn.com/web-sdk/5.8/braze.min.js';
+            
+            // Error handling for script load
+            script.onerror = function() {
+                console.error('Failed to load Braze SDK');
+                document.getElementById('status').textContent = 'Error loading Braze SDK';
+                document.getElementById('status').style.color = 'red';
+            };
+            
+            document.head.appendChild(script);
+        })();
+    </script>
+
     <!-- Braze Configuration -->
     <script type="text/javascript">
-      +function(a,p,P,b,y){a.braze={};a.brazeQueue=[];for(var s="BrazeSdkMetadata DeviceProperties Card Card.prototype.dismissCard Card.prototype.removeAllSubscriptions Card.prototype.removeSubscription Card.prototype.subscribeToClickedEvent Card.prototype.subscribeToDismissedEvent Card.fromContentCardsJson ImageOnly CaptionedImage ClassicCard ControlCard ContentCards ContentCards.prototype.getUnviewedCardCount Feed Feed.prototype.getUnreadCardCount ControlMessage InAppMessage InAppMessage.SlideFrom InAppMessage.ClickAction InAppMessage.DismissType InAppMessage.OpenTarget InAppMessage.ImageStyle InAppMessage.Orientation InAppMessage.TextAlignment InAppMessage.CropType InAppMessage.prototype.closeMessage InAppMessage.prototype.removeAllSubscriptions InAppMessage.prototype.removeSubscription InAppMessage.prototype.subscribeToClickedEvent InAppMessage.prototype.subscribeToDismissedEvent InAppMessage.fromJson FullScreenMessage ModalMessage HtmlMessage SlideUpMessage User User.Genders User.NotificationSubscriptionTypes User.prototype.addAlias User.prototype.addToCustomAttributeArray User.prototype.addToSubscriptionGroup User.prototype.getUserId User.prototype.getUserId User.prototype.incrementCustomUserAttribute User.prototype.removeFromCustomAttributeArray User.prototype.removeFromSubscriptionGroup User.prototype.setCountry User.prototype.setCustomLocationAttribute User.prototype.setCustomUserAttribute User.prototype.setDateOfBirth User.prototype.setEmail User.prototype.setEmailNotificationSubscriptionType User.prototype.setFirstName User.prototype.setGender User.prototype.setHomeCity User.prototype.setLanguage User.prototype.setLastKnownLocation User.prototype.setLastName User.prototype.setPhoneNumber User.prototype.setPushNotificationSubscriptionType User.prototype.setLineId InAppMessageButton InAppMessageButton.prototype.removeAllSubscriptions InAppMessageButton.prototype.removeSubscription InAppMessageButton.prototype.subscribeToClickedEvent FeatureFlag FeatureFlag.prototype.getStringProperty FeatureFlag.prototype.getNumberProperty FeatureFlag.prototype.getBooleanProperty FeatureFlag.prototype.getImageProperty FeatureFlag.prototype.getJsonProperty FeatureFlag.prototype.getTimestampProperty Banner automaticallyShowInAppMessages destroyFeed hideContentCards showContentCards showFeed showInAppMessage deferInAppMessage toggleContentCards toggleFeed changeUser destroy getDeviceId getDeviceId initialize isPushBlocked isPushPermissionGranted isPushSupported logCardClick logCardDismissal logCardImpressions logContentCardImpressions logContentCardClick logCustomEvent logFeedDisplayed logInAppMessageButtonClick logInAppMessageClick logInAppMessageHtmlClick logInAppMessageImpression logPurchase openSession requestPushPermission removeAllSubscriptions removeSubscription requestContentCardsRefresh requestFeedRefresh refreshFeatureFlags requestImmediateDataFlush enableSDK isDisabled setLogger setSdkAuthenticationSignature addSdkMetadata disableSDK subscribeToContentCardsUpdates subscribeToFeedUpdates subscribeToInAppMessage subscribeToSdkAuthenticationFailures toggleLogging unregisterPush wipeData handleBrazeAction subscribeToFeatureFlagsUpdates getAllFeatureFlags logFeatureFlagImpression requestBannersRefresh insertBanner logBannerClick logBannerImpressions getAllBanners subscribeToBannersUpdates isInitialized".split(" "),i=0;i<s.length;i++){for(var m=s[i],k=a.braze,l=m.split("."),j=0;j<l.length-1;j++)k=k[l[j]];k[l[j]]=(new Function("return function "+m.replace(/\./g,"_")+"(){window.brazeQueue.push(arguments); return true}"))()}window.braze.getDeferredInAppMessage=function(){return new window.braze.InAppMessage};window.braze.getCachedContentCards=function(){return new window.braze.ContentCards};window.braze.getCachedFeed=function(){return new window.braze.Feed};window.braze.getUser=function(){return new window.braze.User};window.braze.getFeatureFlag=function(){return new window.braze.FeatureFlag};window.braze.getBanner=function(){return new window.braze.Banner};window.braze.newBannerFromJson=function(){return new window.braze.Banner};(y=p.createElement(P)).type='text/javascript';
-        y.src='https://js.appboycdn.com/web-sdk/5.8/braze.min.js';
-        y.async=1;(b=p.getElementsByTagName(P)[0]).parentNode.insertBefore(y,b)
-      }(window,document,'script');
         window.brazeConfig = {
-            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
-            endpoint: 'sdk.iad-03.braze.com',
-            enableLogging: true
+            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',        // Replace with actual key
+            endpoint: 'sdk.iad-03.braze.com', // Replace with actual endpoint
+            enableLogging: true,
+            serviceWorkerLocation: '/service-worker.js'
         };
     </script>
 </head>
 <body>
     <div id="loginSection">
-        <h2>User Login</h2>
-        <input type="text" id="userId" placeholder="User ID" required>
-        <input type="email" id="userEmail" placeholder="Email" required>
-        <button id="loginButton" disabled>Login</button>
-        <p id="status">Initializing Braze SDK...</p>
+        <h2>Braze Integration</h2>
+        <div id="status">Initializing Braze SDK...</div>
+        <button id="loginBtn" disabled>Login</button>
     </div>
 
     <script>
-        // Braze Initialization Promise
-        const brazeInitialization = new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js';
-            script.async = true;
+        // Debugging initialization
+        let initializationTimeout;
+        const MAX_INIT_TIME = 5000; // 5 seconds timeout
+
+        // 1. SDK Loaded Event Handler
+        document.addEventListener('braze.SDKLoaded', function() {
+            console.log('Braze SDK loaded, initializing...');
+            clearTimeout(initializationTimeout);
             
-            script.onload = () => {
+            try {
                 braze.initialize(window.brazeConfig.apiKey, {
                     baseUrl: window.brazeConfig.endpoint,
                     enableLogging: window.brazeConfig.enableLogging,
-                    serviceWorkerLocation: "/service-worker.js"
+                    serviceWorkerLocation: window.brazeConfig.serviceWorkerLocation
                 });
                 
                 braze.openSession();
-                console.log('Braze SDK initialized');
-                document.getElementById('status').textContent = 'Ready to login!';
-                document.getElementById('loginButton').disabled = false;
-                resolve();
-            };
-
-            script.onerror = () => {
-                reject(new Error('Failed to load Braze SDK'));
-            };
-
-            document.head.appendChild(script);
+                console.log('Braze initialized successfully');
+                updateUIStatus('Braze initialized!', 'green');
+                document.getElementById('loginBtn').disabled = false;
+            } catch (error) {
+                console.error('Initialization error:', error);
+                updateUIStatus('Initialization failed', 'red');
+            }
         });
 
-        // Login function with initialization check
-        async function loginUser() {
-            try {
-                // Wait for SDK initialization
-                await brazeInitialization;
+        // 2. Timeout Fallback
+        initializationTimeout = setTimeout(function() {
+            if (!document.getElementById('loginBtn').disabled) return;
+            console.error('Braze initialization timeout');
+            updateUIStatus('Initialization timeout - check network', 'orange');
+        }, MAX_INIT_TIME);
 
-                const userId = document.getElementById('userId').value;
-                const userEmail = document.getElementById('userEmail').value;
-
-                if (!userId || !userEmail) {
-                    throw new Error('Please fill in all fields');
-                }
-
-                // Braze operations
-                braze.changeUser(userId);
-                braze.getUser().setEmail(userEmail);
-                braze.logCustomEvent("user_login", {
-                    login_method: "email",
-                    user_id: userId
-                });
-
-                alert('Login successful! Data sent to Braze.');
-                console.log('Braze user:', braze.getUser());
-                
-            } catch (error) {
-                console.error('Login failed:', error);
-                alert(`Error: ${error.message}`);
-            }
+        // 3. Status Updater
+        function updateUIStatus(message, color) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.style.color = color || 'black';
         }
 
-        // Assign login function to button
-        document.getElementById('loginButton').onclick = loginUser;
+        // 4. Login Handler
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            if (!braze.isInitialized()) {
+                alert('Braze not initialized yet!');
+                return;
+            }
+            
+            // Your login logic here
+            braze.changeUser('test_user');
+            braze.logCustomEvent('test_event');
+            alert('Action performed successfully!');
+        });
+
+        // 5. Service Worker Verification
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                console.log('Service Workers registered:', registrations.length);
+                registrations.forEach(registration => {
+                    console.log('Scope:', registration.scope);
+                });
+            });
+        }
+
+        // 6. Debugging Helpers
+        console.log('Braze initialization started at:', new Date().toISOString());
+        setInterval(() => {
+            console.log('Current initialization state:', {
+                brazeLoaded: typeof braze !== 'undefined',
+                isInitialized: braze ? braze.isInitialized() : false,
+                queueLength: braze ? braze.brazeQueue.length : 0
+            });
+        }, 1000);
     </script>
 </body>
 </html>
