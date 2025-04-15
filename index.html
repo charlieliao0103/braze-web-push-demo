@@ -74,7 +74,7 @@
 
   <script>
     const brazeConfig = {
-      apiKey: 'YOUR_API_KEY',
+      apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
       endpoint: 'sdk.iad-03.braze.com',
       enableLogging: true
     };
@@ -143,19 +143,27 @@
         braze.getUser().setEmail(email);
 
         // Check the current push notification permission
-          // Request push permission if not yet granted
-        const permission = await Notification.requestPermission();
-
-        if (permission === 'granted') {
+        if (Notification.permission === 'granted') {
           braze.registerAppboyPushMessages();
           resultBox.textContent = '✅ You have successfully subscribed to push notifications!';
           resultBox.className = 'success';
-        } else {
-          resultBox.textContent = '❌ Push notifications denied.';
+        } else if (Notification.permission === 'denied') {
+          resultBox.textContent = '❌ Push notifications denied. Please enable them in browser settings.';
           resultBox.className = 'error';
+        } else {
+          // Request push permission if not yet granted
+          const permission = await Notification.requestPermission();
+
+          if (permission === 'granted') {
+            braze.registerAppboyPushMessages();
+            resultBox.textContent = '✅ You have successfully subscribed to push notifications!';
+            resultBox.className = 'success';
+          } else {
+            resultBox.textContent = '❌ Push notifications denied.';
+            resultBox.className = 'error';
+          }
         }
-        
-       catch (err) {
+      } catch (err) {
         console.error('Error during user setup:', err);
         resultBox.textContent = `❌ Error: ${err.message}`;
         resultBox.className = 'error';
