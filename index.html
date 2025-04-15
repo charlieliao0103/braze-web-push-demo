@@ -63,17 +63,15 @@
 
     <script>
         const brazeConfig = {
-            apiKey: 'eb2c7ebf-278a-4c77-81ea-8e029e80a5a8',
+            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
             endpoint: 'sdk.iad-03.braze.com',
-            sendApiKey: 'f512da0e-d48f-4f78-9e20-49d310b697bd',
-            sendEndpoint: 'https://rest.iad-03.braze.com'
             enableLogging: true
         };
 
         function initializeBraze() {
             try {
                 braze.initialize(brazeConfig.apiKey, {
-                    baseUrl: brazeConfig.endpoint,
+                    baseUrl: `https://${brazeConfig.endpoint}`,
                     serviceWorkerLocation: '/sw.js',
                     enableLogging: brazeConfig.enableLogging,
                     sessionTimeoutInSeconds: 30,
@@ -112,14 +110,14 @@
             results.className = '';
             results.textContent = 'Testing connection to Braze...';
 
-            fetch('https://rest.iad-03.braze.com/users/identify', {
+            fetch(`https://${brazeConfig.endpoint}/users/identify`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer f512da0e-d48f-4f78-9e20-49d310b697bd'
+                    'Authorization': `Bearer ${brazeConfig.apiKey}`
                 },
                 body: JSON.stringify({
-                    user_aliases: { external_id: 'test_user123' },
+                    user_aliases: { external_id: 'test_user' },
                     attributes: {}
                 })
             })
@@ -128,7 +126,7 @@
                     results.textContent = '✅ Successfully connected to Braze API';
                     results.className = 'success';
                 } else {
-                    results.textContent = `⚠️ Received unexpected status:`;
+                    results.textContent = `⚠️ Received unexpected status: ${response.status}`;
                     results.className = 'error';
                 }
             })
@@ -153,4 +151,3 @@
     </script>
 </body>
 </html>
-
