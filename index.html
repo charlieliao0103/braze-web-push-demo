@@ -1,67 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Braze Web Push Demo</title>
-  <script type="text/javascript" src="https://js.appboycdn.com/web-sdk/4.5/appboy.min.js"></script>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f9f9f9;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
+  <title>Braze Web Push Test</title>
+  <script src="https://js.appboycdn.com/web-sdk/4.7/web-sdk.braze.min.js"></script>
+  <script>
+    // Initialize Braze
+    window.appboy = require('appboy');
+    appboy.initialize('YOUR-API-KEY', {
+      baseUrl: 'sdk.iad-01.braze.com',
+      enableLogging: true,
+      serviceWorkerLocation: '/service-worker.js'
+    });
+    
+    // Function to request push permission
+    function requestPushPermission() {
+      appboy.subscribeToPushNotifications(function() {
+        console.log("Push permission granted!");
+        alert("You've successfully subscribed to push notifications!");
+      }, function() {
+        console.log("Push permission denied");
+      });
     }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      border: none;
-      background-color: #007aff;
-      color: white;
-      border-radius: 5px;
-    }
-    #status {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #333;
-    }
-  </style>
+  </script>
 </head>
 <body>
-  <h1>Braze Web Push Demo</h1>
-  <button id="subscribe">Enable Push Notifications</button>
-  <div id="status"></div>
-
-  <script>
-    const BRAZE_API_KEY = "84e848cb-2923-4629-bd23-e6e4155615bd"; // Replace with your Braze API key
-    const BRAZE_ENDPOINT = "sdk.iad-03.braze.com"; // e.g., sdk.iad-01.braze.com
-
-    const statusEl = document.getElementById("status");
-
-    // Initialize Braze
-    appboy.initialize(BRAZE_API_KEY, {
-      baseUrl: "https://" + BRAZE_ENDPOINT,
-      enableLogging: true
-    });
-
-    appboy.display.automaticallyShowNewInAppMessages();
-
-    // Handle push subscription
-    document.getElementById("subscribe").addEventListener("click", async () => {
-      try {
-        // Register for push without VAPID (Braze uses RSA server-side)
-        await appboy.registerAppboyPushMessages();
-        appboy.openSession();
-        statusEl.innerText = "Push subscription successful!";
-      } catch (e) {
-        statusEl.innerText = "Failed to subscribe: " + e.message;
-        console.error(e);
-      }
-    });
-  </script>
+  <h1>Web Push Test Page</h1>
+  <button onclick="requestPushPermission()">Subscribe to Push Notifications</button>
 </body>
 </html>
