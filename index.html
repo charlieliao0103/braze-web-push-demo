@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Braze User Login & Push Demo</title>
+    <title>Braze User Login Fix</title>
     <!-- Braze Web SDK -->
     <script type="text/javascript">
-        !function(){var t=window.braze=window.braze||[];if(t.initialized)return;t.initialized=!0,t._version="4.7.2",t._serverUrl="YOUR_SDK_ENDPOINT",t.serviceWorkerUrl="/service-worker.js",t.openInAppBrowserInNewTab=!0;var e=document.createElement("script");e.type="text/javascript",e.async=!0,e.src="https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js",e.onload=function(){window.braze.initialize("YOUR_API_KEY")},document.getElementsByTagName("head")[0].appendChild(e)}();
+        // Initialize Braze only once
+        window.brazeConfig = {
+            apiKey: 'YOUR_API_KEY',
+            endpoint: 'YOUR_SDK_ENDPOINT'
+        };
     </script>
+    <script async src="https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js"></script>
 </head>
 <body>
     <div id="loginSection">
         <h2>User Login</h2>
-        <input type="text" id="userId" placeholder="User ID">
-        <input type="email" id="userEmail" placeholder="Email">
+        <input type="text" id="userId" placeholder="User ID" required>
+        <input type="email" id="userEmail" placeholder="Email" required>
         <button onclick="loginUser()">Login</button>
     </div>
 
@@ -21,72 +26,106 @@
     </div>
 
     <script>
-        // Initialize Braze with configuration
-        braze.initialize("84e848cb-2923-4629-bd23-e6e4155615bd", {
-            baseUrl: "sdk.iad-03.braze.com",
-            enableLogging: true,
-            allowUserSuppliedJavascript: true,
-            serviceWorkerLocation: "/service-worker.js"
-        });
-
-        // Open session when page loads
-        braze.openSession();
-
-        // User login function
-        function loginUser() {
-            const userId = document.getElementById('userId').value;
-            const userEmail = document.getElementById('userEmail').value;
-
-            if (!userId || !userEmail) {
-                alert('Please fill in all fields');
-                return;
+        // Debugging setup
+        console.log('Initializing Braze integration...');
+        
+        // Wait for Braze SDK to load
+        let brazeInitialized = false;
+        const initBraze = setInterval(() => {
+            if (typeof braze !== 'undefined' && !brazeInitialized) {
+                clearInterval(initBraze);
+                brazeInitialized = true;
+                
+                braze.initialize(window.brazeConfig.apiKey, {
+                    baseUrl: window.brazeConfig.endpoint,
+                    enableLogging: true,
+                    allowUserSuppliedJavascript: true,
+                    serviceWorkerLocation: "/service-worker.js"
+                });
+                
+                braze.openSession();
+                console.log('Braze initialized successfully!');
+                braze.automaticallyShowInAppMessages();
             }
+        }, 100);
 
-            // Identify user in Braze
-            braze.changeUser(userId);
-            
-            // Set user attributes
-            braze.getUser().setEmail(userEmail);
-            braze.getUser().setFirstName("John"); // Add actual first name input if needed
-            braze.getUser().setLastName("Doe");  // Add actual last name input if needed
-            
-            // Log custom event for login
-            braze.logCustomEvent("user_login", {
-                login_method: "email"
-            });
+        // User login function with error handling
+        async function loginUser() {
+            try {
+                console.log('Login button clicked');
+                
+                const userId = document.getElementById('userId').value;
+                const userEmail = document.getElementById('userEmail').value;
+                console.log('Input values:', { userId, userEmail });
 
-            // Show push notification section
-            document.getElementById('pushSection').style.display = 'block';
-            alert('User logged in successfully!');
+                if (!userId || !userEmail) {
+                    throw new Error('Please fill in all fields');
+                }
+
+                if (!brazeInitialized) {
+                    throw new Error('Braze SDK not initialized yet');
+                }
+
+                // Identify user
+                console.log('Changing user:', userId);
+                braze.changeUser(userId);
+                
+                // Set user attributes
+                console.log('Setting user attributes');
+                braze.getUser().setEmail(userEmail);
+                
+                // Log custom event
+                console.log('Logging custom event');
+                braze.logCustomEvent("user_login", {
+                    login_method: "email",
+                    timestamp: new Date().toISOString()
+                });
+
+                // Show push section
+                document.getElementById('pushSection').style.display = 'block';
+                console.log('Login successful, push section visible');
+                
+                // Force sync data with Braze servers
+                braze.requestImmediateDataFlush();
+                
+                alert('Login successful! Check browser console for details.');
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(`Error: ${error.message}`);
+            }
         }
 
         // Push Notification Handling
         function requestPushPermission() {
-            if (braze.isPushSupported()) {
+            try {
+                if (!braze.isPushSupported()) {
+                    throw new Error('Push notifications not supported in this browser');
+                }
+
                 braze.requestPushPermission((permission) => {
                     if (permission === braze.PushPermission.GRANTED) {
-                        alert('Push notifications enabled!');
-                        // Optional: Subscribe user to push campaigns
                         braze.getUser().setPushNotificationSubscriptionType(
                             braze.NotificationSubscriptionType.OPTED_IN
                         );
+                        alert('Push notifications enabled!');
                     } else {
                         alert('Push permission denied');
                     }
                 });
-            } else {
-                alert('Push notifications not supported in this browser');
+            } catch (error) {
+                console.error('Push error:', error);
+                alert(`Error: ${error.message}`);
             }
         }
 
-        // Handle service worker registration for push
+        // Service Worker Registration
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/service-worker.js')
                 .then(registration => {
-                    console.log('ServiceWorker registration successful');
+                    console.log('Service Worker registered:', registration);
                 })
-                .catch(err => {
-                    console.log('ServiceWorker registration failed:', err);
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
                 });
         }
     </script>
