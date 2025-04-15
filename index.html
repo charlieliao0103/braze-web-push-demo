@@ -3,90 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braze Final Solution</title>
-    <meta http-equiv="Content-Security-Policy" 
-          content="default-src 'self';
-                   connect-src 'self' https://*.braze.com;
-                   script-src 'self' 'unsafe-inline' https://js.appboycdn.com;
-                   worker-src 'self' blob:;
-                   style-src 'self' 'unsafe-inline'">
+    <title>Braze Integration Demo</title>
+    <style>
+        /* Initial CSS to ensure visibility */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+    </style>
     
     <!-- Braze Loader -->
-    <!-- Braze Loader with Error Handling -->
     <script>
         (function(){
             var brazeLoader = document.createElement('script');
             brazeLoader.src = 'https://js.appboycdn.com/web-sdk/5.8/braze.min.js';
             brazeLoader.async = true;
             
-            // Add error handler
+            brazeLoader.onload = function() {
+                console.log('Braze SDK loaded');
+                initializeBraze();
+            };
+            
             brazeLoader.onerror = function() {
-                console.error('Braze SDK failed to load');
-                updateStatus('Braze SDK load failed', 'error');
+                console.error('Failed to load Braze SDK');
+                document.getElementById('status').textContent = 'Error loading Braze SDK';
             };
             
             document.head.appendChild(brazeLoader);
         })();
     </script>
-
-    <!-- Configuration -->
-    <script type="text/javascript">
-        window.brazeConfig = {
-            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
-            endpoint: 'sdk.iad-03.braze.com',
-            enableLogging: true,
-            initialized: false
-        };
-    </script>
 </head>
 <body>
-    <!-- Keep existing body content -->
+    <div id="container">
+        <h1>Braze Integration Demo</h1>
+        <div id="status">Loading Braze SDK...</div>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="testResults"></div>
+    </div>
 
     <script>
-        // Modified Braze Initialization
-        document.addEventListener('braze.SDKLoaded', () => {
+        // Configuration
+        const brazeConfig = {
+            apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
+            endpoint: 'sdk.iad-03.braze.com',
+            enableLogging: true
+        };
+
+        // Braze Initialization
+        function initializeBraze() {
             try {
-                console.log('Braze SDK loaded, initializing...');
-                
-                braze.initialize(window.brazeConfig.apiKey, {
-                    baseUrl: `https://${window.brazeConfig.endpoint}`,
-                    serviceWorkerLocation: '/sw.js',
-                    enableLogging: true,
-                    sessionTimeoutInSeconds: 30,
-                    noCookies: true
+                braze.initialize(brazeConfig.apiKey, {
+                    baseUrl: `https://${brazeConfig.endpoint}`,
+                    enableLogging: brazeConfig.enableLogging,
+                    serviceWorkerLocation: '/sw.js'
                 });
 
-                // Verify initialization
-                const checkInitialized = setInterval(() => {
-                    if (braze.isInitialized()) {
-                        clearInterval(checkInitialized);
-                        window.brazeConfig.initialized = true;
-                        braze.openSession();
-                        updateStatus('Braze initialized successfully', 'success');
-                        console.log('Braze fully initialized');
-                    }
-                }, 100);
-
-                // Timeout after 10 seconds
-                setTimeout(() => {
-                    if (!window.brazeConfig.initialized) {
-                        clearInterval(checkInitialized);
-                        throw new Error('Initialization timeout');
-                    }
-                }, 10000);
-
+                braze.openSession();
+                document.getElementById('status').textContent = 'Braze initialized successfully';
+                
+                // Enable test button
+                document.querySelector('button').disabled = false;
+                
             } catch (error) {
-                console.error('Initialization error:', error);
-                updateStatus(`Initialization failed: ${error.message}`, 'error');
+                console.error('Braze initialization failed:', error);
+                document.getElementById('status').textContent = `Initialization error: ${error.message}`;
             }
-        });
+        }
 
-        // Add this status update function
-        function updateStatus(text, type) {
-            const statusEl = document.getElementById('status');
-            statusEl.textContent = text;
-            statusEl.style.color = type === 'error' ? 'red' : 'inherit';
-            statusEl.style.fontWeight = type === 'success' ? 'bold' : 'normal';
+        // Connection Test
+        function testConnection() {
+            const results = document.getElementById('testResults');
+            fetch(`https://${brazeConfig.endpoint}/healthz`)
+                .then(response => {
+                    results.textContent = response.ok 
+                        ? '✅ Connected to Braze servers' 
+                        : '❌ Connection failed';
+                })
+                .catch(error => {
+                    results.textContent = `❌ Error: ${error.message}`;
+                });
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(reg => console.log('Service worker registered'))
+                .catch(err => console.error('SW registration failed:', err));
         }
     </script>
 </body>
