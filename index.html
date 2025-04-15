@@ -297,12 +297,18 @@ async function runFullConnectionTest() {
   const results = document.getElementById('testResults');
   results.innerHTML = '<h3>Running Diagnostic Tests...</h3>';
 
-  // 1. DNS Resolution Test
+  // 1. Updated DNS Resolution Test
   await testStep('DNS Resolution', async () => {
-    const response = await fetch(`https://dns.google/resolve?name=${window.brazeConfig.endpoint}`);
-    const data = await response.json();
-    if (data.Answer?.length > 0) return true;
-    return false;
+    try {
+      const response = await fetch(`https://cloudflare-dns.com/dns-query?name=${window.brazeConfig.endpoint}&type=A`, {
+        headers: { 'Accept': 'application/dns-json' }
+      });
+      const data = await response.json();
+      return data.Answer?.length > 0;
+    } catch (error) {
+      console.error('DNS test failed:', error);
+      return false;
+    }
   });
 
   // 2. TCP Connection Test
