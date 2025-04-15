@@ -1,93 +1,33 @@
-const CACHE_VERSION = 'braze-sw-v2.1';
-const CACHE_ASSETS = [
-    '/',
-    '/braze-sdk-proxy',
-    'https://js.appboycdn.com/web-sdk/5.8/braze.min.js'
-];
+const CACHE_NAME = 'braze-sw-v1';
 
+// Installation
 self.addEventListener('install', (event) => {
+    console.log('SW installing');
     event.waitUntil(
-        caches.open(CACHE_VERSION)
-            .then(cache => {
-                return cache.addAll(CACHE_ASSETS)
-                    .then(() => self.skipWaiting());
-            })
-            .catch(error => {
-                sendMessageToClients('Install failed: ' + error.message);
-            })
+        caches.open(CACHE_NAME)
+            .then(cache => cache.addAll(['/']))
+            .then(() => self.skipWaiting())
     );
 });
 
+// Activation
 self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys().then(cacheNames => {
-            return Promise.all(
-                cacheNames.filter(name => name !== CACHE_VERSION)
-                          .map(name => caches.delete(name))
-            );
-        }).then(() => self.clients.claim())
-    );
+    console.log('SW activated');
+    event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', (event) => {
-    if (event.request.url.includes('braze.com')) {
-        event.respondWith(
-            cacheFirstWithUpdate(event.request)
-        );
-    } else {
-        event.respondWith(fetch(event.request));
-    }
-});
-
-async function cacheFirstWithUpdate(request) {
-    const cache = await caches.open(CACHE_VERSION);
-    const cachedResponse = await cache.match(request);
-    
-    // Always update in background
-    const fetchPromise = fetch(request).then(networkResponse => {
-        cache.put(request, networkResponse.clone());
-        return networkResponse;
-    });
-
-    return cachedResponse || await fetchPromise;
-}
-
-// Braze Specific Handlers
+// Push Notifications
 self.addEventListener('push', (event) => {
-    const data = event.data.json();
+    console.log('Push received:', event.data.text());
     event.waitUntil(
-        self.registration.showNotification(data.title, {
-            body: data.body,
-            icon: data.icon || '/default-icon.png',
-            data: data.click_action
+        self.registration.showNotification('Test Notification', {
+            body: 'Service Worker is working!',
+            icon: '/icon.png'
         })
     );
 });
 
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    if (event.notification.data) {
-        clients.openWindow(event.notification.data);
-    }
-});
-
-// Debugging Utilities
-function sendMessageToClients(message) {
-    self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-            client.postMessage({
-                type: 'braze-sw-status',
-                message: message
-            });
-        });
-    });
-}
-
-// Error Handling
-self.addEventListener('error', (event) => {
-    sendMessageToClients(`SW Error: ${event.message}`);
-});
-
-self.addEventListener('unhandledrejection', (event) => {
-    sendMessageToClients(`SW Promise Rejection: ${event.reason}`);
+// Message Handling
+self.addEventListener('message', (event) => {
+    console.log('SW received message:', event.data);
 });
