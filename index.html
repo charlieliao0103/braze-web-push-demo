@@ -1,12 +1,94 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Braze Push Demo</title>
-    <script src="https://js.appboycdn.com/web-sdk/5.0/web-appboy.min.js"></script>
+    <title>Braze User Login & Push Demo</title>
+    <!-- Braze Web SDK -->
+    <script type="text/javascript">
+        !function(){var t=window.braze=window.braze||[];if(t.initialized)return;t.initialized=!0,t._version="4.7.2",t._serverUrl="YOUR_SDK_ENDPOINT",t.serviceWorkerUrl="/service-worker.js",t.openInAppBrowserInNewTab=!0;var e=document.createElement("script");e.type="text/javascript",e.async=!0,e.src="https://js.appboycdn.com/web-sdk/4.7.2/braze.min.js",e.onload=function(){window.braze.initialize("YOUR_API_KEY")},document.getElementsByTagName("head")[0].appendChild(e)}();
+    </script>
 </head>
 <body>
-    <button id="optInButton">Enable Push Notifications</button>
-    <script src="app.js"></script>
+    <div id="loginSection">
+        <h2>User Login</h2>
+        <input type="text" id="userId" placeholder="User ID">
+        <input type="email" id="userEmail" placeholder="Email">
+        <button onclick="loginUser()">Login</button>
+    </div>
+
+    <div id="pushSection" style="display:none;">
+        <h2>Push Notifications</h2>
+        <button onclick="requestPushPermission()">Enable Push Notifications</button>
+    </div>
+
+    <script>
+        // Initialize Braze with configuration
+        braze.initialize("YOUR_API_KEY", {
+            baseUrl: "YOUR_SDK_ENDPOINT",
+            enableLogging: true,
+            allowUserSuppliedJavascript: true,
+            serviceWorkerLocation: "/service-worker.js"
+        });
+
+        // Open session when page loads
+        braze.openSession();
+
+        // User login function
+        function loginUser() {
+            const userId = document.getElementById('userId').value;
+            const userEmail = document.getElementById('userEmail').value;
+
+            if (!userId || !userEmail) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            // Identify user in Braze
+            braze.changeUser(userId);
+            
+            // Set user attributes
+            braze.getUser().setEmail(userEmail);
+            braze.getUser().setFirstName("John"); // Add actual first name input if needed
+            braze.getUser().setLastName("Doe");  // Add actual last name input if needed
+            
+            // Log custom event for login
+            braze.logCustomEvent("user_login", {
+                login_method: "email"
+            });
+
+            // Show push notification section
+            document.getElementById('pushSection').style.display = 'block';
+            alert('User logged in successfully!');
+        }
+
+        // Push Notification Handling
+        function requestPushPermission() {
+            if (braze.isPushSupported()) {
+                braze.requestPushPermission((permission) => {
+                    if (permission === braze.PushPermission.GRANTED) {
+                        alert('Push notifications enabled!');
+                        // Optional: Subscribe user to push campaigns
+                        braze.getUser().setPushNotificationSubscriptionType(
+                            braze.NotificationSubscriptionType.OPTED_IN
+                        );
+                    } else {
+                        alert('Push permission denied');
+                    }
+                });
+            } else {
+                alert('Push notifications not supported in this browser');
+            }
+        }
+
+        // Handle service worker registration for push
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker registration successful');
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed:', err);
+                });
+        }
+    </script>
 </body>
 </html>
