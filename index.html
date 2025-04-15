@@ -71,7 +71,7 @@
         function initializeBraze() {
             try {
                 braze.initialize(brazeConfig.apiKey, {
-                    baseUrl: `https://${brazeConfig.endpoint}`,
+                    baseUrl: brazeConfig.endpoint,
                     serviceWorkerLocation: '/sw.js',
                     enableLogging: brazeConfig.enableLogging,
                     sessionTimeoutInSeconds: 30,
@@ -117,7 +117,7 @@
                     'Authorization': `Bearer ${brazeConfig.apiKey}`
                 },
                 body: JSON.stringify({
-                    user_aliases: { external_id: 'test_user' },
+                    user_aliases: { external_id: 'test_user123' },
                     attributes: {}
                 })
             })
