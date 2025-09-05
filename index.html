@@ -503,7 +503,7 @@
             gameState.score += Math.floor(Math.random() * 100) + 50;
             updateGameStats();
             
-            braze.logCustomEvent('game_played', { score: gameState.score });
+            braze.logCustomEvent('Charlie_Testing', { score: gameState.score });
             addLog(`Game played. Score: ${gameState.score}`, 'info');
         }
         
