@@ -55,36 +55,157 @@
 </head>
 <body>
   <div id="container">
-    <h1>Braze Web Push Integration</h1>
-    <div id="status" class="info">Initializing Braze...</div>
+    <h1>Future Anthem x Braze Demo</h1>
+    
+    <!-- Control Panel for Custom Messages -->
+    <div id="controlPanel" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px;">
+      <h2>Custom Message Controller</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+          <label for="messageText">Message Text:</label>
+          <input type="text" id="messageText" value="Welcome to Braze Analytics!" style="width: 100%; padding: 8px; margin: 5px 0;">
+        </div>
+        <div>
+          <label for="messageType">Message Type:</label>
+          <select id="messageType" style="width: 100%; padding: 8px; margin: 5px 0;">
+            <option value="info">Info</option>
+            <option value="success">Success</option>
+            <option value="warning">Warning</option>
+            <option value="error">Error</option>
+          </select>
+        </div>
+      </div>
+      <button id="triggerCustomMsg" style="margin-top: 10px; padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Trigger Custom Message
+      </button>
+    </div>
 
-    <h2>Add New User</h2>
-    <form id="userForm">
-      <label for="externalId">External ID</label>
-      <input type="text" id="externalId" required />
-      <label for="firstName">First Name</label>
-      <input type="text" id="firstName" required />
-      <label for="email">Email</label>
-      <input type="email" id="email" required />
-      <button type="submit">Submit & Enable Push</button>
-    </form>
+    <!-- Graph Canvas -->
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+      <h2>User Engagement Analytics</h2>
+      <canvas id="analyticsChart" width="400" height="200"></canvas>
+    </div>
 
-    <div id="testResults"></div>
+    <!-- Quick Actions -->
+    <div style="margin-top: 20px;">
+      <h2>Quick Actions</h2>
+      <button id="simulateDataBtn" style="padding: 10px 15px; margin: 5px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Simulate New Data
+      </button>
+      <button id="refreshChartBtn" style="padding: 10px 15px; margin: 5px; background: #ff9800; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Refresh Chart
+      </button>
+    </div>
+
+    <!-- Test Results Box (Kept for feedback) -->
+    <div id="testResults" style="margin-top: 20px; padding: 15px; border-radius: 5px; display: none;"></div>
   </div>
 
+  <!-- Slide-up Message Container (Hidden by default) -->
+  <div id="slideUpMessage" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: #333; color: white; padding: 15px; text-align: center; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">
+    <span id="messageContent"></span>
+    <button onclick="hideSlideUpMessage()" style="position: absolute; right: 15px; background: none; border: none; color: white; cursor: pointer; font-size: 18px;">×</button>
+  </div>
+
+  <!-- Load Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <script>
+    // Your existing Braze configuration
     const brazeConfig = {
       apiKey: '84e848cb-2923-4629-bd23-e6e4155615bd',
       endpoint: 'sdk.iad-03.braze.com',
       enableLogging: true
     };
 
-    function updateStatus(text, type) {
-      const statusEl = document.getElementById('status');
-      statusEl.textContent = text;
-      statusEl.className = type || '';
+    // Initialize Chart.js
+    let analyticsChart;
+    function initializeChart() {
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      analyticsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+          datasets: [{
+            label: 'Monthly Active Users',
+            data: [120, 190, 300, 250, 420, 380],
+            borderColor: '#4CAF50',
+            backgroundColor: 'rgba(76, 175, 80, 0.1)',
+            tension: 0.3,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'User Growth Trend'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
     }
 
+    // Slide-up Message Functions
+    function showSlideUpMessage(message, type = 'info') {
+      const messageEl = document.getElementById('slideUpMessage');
+      const contentEl = document.getElementById('messageContent');
+      
+      // Set message content and style based on type
+      contentEl.textContent = message;
+      messageEl.style.display = 'block';
+      
+      // Set color based on message type
+      const colors = {
+        info: '#2196F3',
+        success: '#4CAF50',
+        warning: '#FF9800',
+        error: '#F44336'
+      };
+      messageEl.style.background = colors[type] || colors.info;
+      
+      // Auto-hide after 5 seconds
+      setTimeout(hideSlideUpMessage, 5000);
+    }
+
+    function hideSlideUpMessage() {
+      document.getElementById('slideUpMessage').style.display = 'none';
+    }
+
+    // Simulate new data for the chart
+    function simulateNewData() {
+      const newData = analyticsChart.data.datasets[0].data.map(value => 
+        Math.max(0, value + Math.floor(Math.random() * 100) - 30)
+      );
+      analyticsChart.data.datasets[0].data = newData;
+      analyticsChart.update();
+      showSlideUpMessage('New simulated data loaded!', 'success');
+    }
+
+    // Event Listeners
+    document.getElementById('triggerCustomMsg').addEventListener('click', function() {
+      const messageText = document.getElementById('messageText').value;
+      const messageType = document.getElementById('messageType').value;
+      
+      if (messageText.trim()) {
+        showSlideUpMessage(messageText, messageType);
+        updateTestResults(`Custom "${messageType}" message triggered: ${messageText}`, 'success');
+      }
+    });
+
+    document.getElementById('simulateDataBtn').addEventListener('click', simulateNewData);
+    document.getElementById('refreshChartBtn').addEventListener('click', function() {
+      analyticsChart.update();
+      showSlideUpMessage('Chart refreshed!', 'info');
+    });
+
+    // Your existing Braze initialization code (modified to remove status updates)
     function initializeBraze() {
       try {
         braze.initialize(brazeConfig.apiKey, {
@@ -95,87 +216,36 @@
           noCookies: false
         });
 
-        braze.subscribeToSdkAuthenticationFailures(error => {
-          console.error('Braze Auth Error:', error);
-          updateStatus('🔐 Authentication Failed', 'error');
-        });
-
+        // Remove the status update calls from here
         const initInterval = setInterval(() => {
           if (braze.isInitialized()) {
             clearInterval(initInterval);
             braze.openSession();
-            updateStatus('✅ Braze Initialized Successfully', 'success');
+            // Silent initialization - no status update
+            console.log('Braze initialized successfully');
           }
         }, 100);
 
-        setTimeout(() => {
-          clearInterval(initInterval);
-          if (!braze.isInitialized()) {
-            throw new Error('Initialization timeout');
-          }
-        }, 10000);
       } catch (error) {
         console.error('Initialization Error:', error);
-        updateStatus(`❌ ${error.message}`, 'error');
       }
     }
 
-    document.getElementById('userForm').addEventListener('submit', async function (e) {
-      e.preventDefault();
-      const externalId = document.getElementById('externalId').value.trim();
-      const firstName = document.getElementById('firstName').value.trim();
-      const email = document.getElementById('email').value.trim();
+    // Keep your existing updateTestResults function
+    function updateTestResults(text, type) {
       const resultBox = document.getElementById('testResults');
+      resultBox.textContent = text;
+      resultBox.className = type;
+      resultBox.style.display = 'block';
+    }
 
-      if (!externalId || !firstName || !email) {
-        resultBox.textContent = '⚠️ All fields are required.';
-        resultBox.className = 'error';
-        return;
-      }
-
-      resultBox.textContent = '⏳ Setting user and requesting push permission...';
-      resultBox.className = 'info';
-
-            try {
-        // Set user in Braze
-        braze.changeUser(externalId);
-        braze.getUser().setFirstName(firstName);
-        braze.getUser().setEmail(email);
-
-        // Check the current push notification permission
-        if (Notification.permission === 'granted') {
-          braze.requestPushPermission();
-          resultBox.textContent = '✅ You have successfully subscribed to push notifications!';
-          resultBox.className = 'success';
-        } else if (Notification.permission === 'denied') {
-          resultBox.textContent = '❌ Push notifications denied. Please enable them in browser settings.';
-          resultBox.className = 'error';
-        } else {
-          // Request push permission if not yet granted
-          const permission = await Notification.requestPermission();
-
-          if (permission === 'granted') {
-            braze.requestPushPermission();
-            resultBox.textContent = '✅ You have successfully subscribed to push notifications!';
-            resultBox.className = 'success';
-          } else {
-            resultBox.textContent = '❌ Push notifications denied.';
-            resultBox.className = 'error';
-          }
-        }
-      } catch (err) {
-        console.error('Error during user setup:', err);
-        resultBox.textContent = `❌ Error: ${err.message}`;
-        resultBox.className = 'error';
-      }
+    // Initialize everything when the page loads
+    window.addEventListener('load', function() {
+      initializeChart();
+      // Braze will initialize automatically via the script loader
     });
 
-    // Optional: Register service worker for web push
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then(() => console.log('✅ Service Worker registered'))
-        .catch(err => console.error('Service Worker registration failed:', err));
-    }
+    // Remove the user form submission event listener entirely
   </script>
 </body>
 </html>
