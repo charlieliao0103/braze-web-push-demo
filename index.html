@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Simulation - Braze Integration</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -30,64 +30,114 @@
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            padding: 20px;
         }
         
         header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #eee;
         }
         
         h1 {
             font-size: 2.2rem;
-            color: #2c3e50;
             margin-bottom: 10px;
         }
         
         .subtitle {
-            color: #7f8c8d;
             font-size: 1rem;
+            opacity: 0.8;
         }
         
-        .graph-container {
+        .content {
+            padding: 20px;
+        }
+        
+        .panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
             background: white;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px;
         }
         
-        .status-indicators {
-            display: flex;
-            justify-content: space-around;
-            margin-bottom: 20px;
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
         }
         
-        .status {
-            text-align: center;
-            padding: 10px 15px;
-            border-radius: 8px;
-            background: #f8f9fa;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .form-group {
+            margin-bottom: 15px;
         }
         
-        .status i {
-            font-size: 1.5rem;
+        label {
+            display: block;
             margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
         }
         
-        .status.connected i {
-            color: #27ae60;
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
         }
         
-        .status.pending i {
-            color: #f39c12;
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s;
         }
         
-        .status-text {
-            font-size: 0.9rem;
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .game-btn {
+            background: #27ae60;
+            margin-top: 10px;
+        }
+        
+        .game-btn:hover {
+            background: #219653;
+        }
+        
+        .user-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .user-info h3 {
+            color: #1565c0;
+            margin-bottom: 10px;
+        }
+        
+        .user-detail {
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .user-detail span:first-child {
             font-weight: 500;
         }
         
@@ -199,41 +249,30 @@
             cursor: pointer;
         }
         
-        .push-notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 300px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        .game-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat {
+            background: #f8f9fa;
             padding: 15px;
-            z-index: 1000;
-            transform: translateY(-100px);
-            opacity: 0;
-            transition: all 0.4s ease;
+            border-radius: 8px;
+            text-align: center;
         }
         
-        .push-visible {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        .push-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .push-title {
-            font-weight: 600;
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
             color: #2c3e50;
+            display: block;
         }
         
-        .push-body {
-            font-size: 0.9rem;
+        .stat-label {
             color: #7f8c8d;
+            font-size: 0.9rem;
         }
     </style>
 
@@ -257,30 +296,68 @@
     <div class="container">
         <header>
             <h1>🎮 Game Simulation</h1>
-            <p class="subtitle">Braze In-App Messages & Push Notifications Demo</p>
+            <p class="subtitle">Braze User Registration & Message Demo</p>
         </header>
         
-        <div class="status-indicators">
-            <div class="status connected">
-                <i class="fas fa-check-circle"></i>
-                <div class="status-text">UI Ready</div>
+        <div class="content">
+            <div class="panels">
+                <div class="panel">
+                    <h2>User Registration</h2>
+                    <div class="form-group">
+                        <label for="userId">User ID</label>
+                        <input type="text" id="userId" placeholder="Enter user ID">
+                    </div>
+                    <div class="form-group">
+                        <label for="userName">Name</label>
+                        <input type="text" id="userName" placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail">Email</label>
+                        <input type="email" id="userEmail" placeholder="Enter your email">
+                    </div>
+                    <button id="registerBtn">Register User</button>
+                    
+                    <div class="user-info" id="userInfo" style="display: none;">
+                        <h3>Registered User</h3>
+                        <div class="user-detail">
+                            <span>ID:</span>
+                            <span id="displayUserId"></span>
+                        </div>
+                        <div class="user-detail">
+                            <span>Name:</span>
+                            <span id="displayUserName"></span>
+                        </div>
+                        <div class="user-detail">
+                            <span>Email:</span>
+                            <span id="displayUserEmail"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2>Game Simulation</h2>
+                    <p>Simulate gameplay actions to trigger Braze campaigns</p>
+                    
+                    <div class="game-stats">
+                        <div class="stat">
+                            <span class="stat-value" id="score">0</span>
+                            <span class="stat-label">Score</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value" id="level">1</span>
+                            <span class="stat-label">Level</span>
+                        </div>
+                    </div>
+                    
+                    <button class="game-btn" id="playBtn">Play Game</button>
+                    <button class="game-btn" id="completeLevelBtn">Complete Level</button>
+                    <button class="game-btn" id="makePurchaseBtn">Make Purchase</button>
+                </div>
             </div>
-            <div class="status pending" id="braze-status">
-                <i class="fas fa-sync-alt"></i>
-                <div class="status-text">Braze Connecting</div>
+            
+            <div class="message-log" id="messageLog">
+                <div class="log-entry log-info">System initialized. Please register a user to begin.</div>
             </div>
-            <div class="status pending" id="push-status">
-                <i class="fas fa-bell"></i>
-                <div class="status-text">Push Ready</div>
-            </div>
-        </div>
-        
-        <div class="graph-container">
-            <canvas id="gameChart"></canvas>
-        </div>
-        
-        <div class="message-log" id="messageLog">
-            <div class="log-entry log-info">System initialized. Loading Braze SDK...</div>
         </div>
     </div>
 
@@ -296,80 +373,27 @@
                 Check out our new game level - available now!
             </div>
             <div class="message-actions">
-                <button class="message-btn btn-primary">Play Now</button>
+                <button class="message-btn btn-primary">Claim Now</button>
                 <button class="message-btn btn-secondary">Later</button>
             </div>
         </div>
     </div>
 
-    <!-- Push Notification Template -->
-    <div class="push-notification" id="push-notification">
-        <div class="push-header">
-            <div class="push-title" id="push-title">Game Update</div>
-            <button class="close-btn" id="close-push">×</button>
-        </div>
-        <div class="push-body" id="push-body">
-            You have a new message from the game!
-        </div>
-    </div>
-
     <script>
-        // Initialize game data and chart
-        let gameData = {
-            score: 2450,
-            level: 7,
-            coins: 320,
-            players: 12500
+        // Game state
+        let gameState = {
+            score: 0,
+            level: 1,
+            coins: 100
         };
         
-        let gameChart;
-        
-        function initializeChart() {
-            const ctx = document.getElementById('gameChart').getContext('2d');
-            gameChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Player Score', 'Game Level', 'Coins Collected', 'Active Players'],
-                    datasets: [{
-                        label: 'Game Statistics',
-                        data: [gameData.score, gameData.level, gameData.coins, gameData.players],
-                        backgroundColor: [
-                            'rgba(54, 162, 235, 0.7)',
-                            'rgba(75, 192, 192, 0.7)',
-                            'rgba(255, 206, 86, 0.7)',
-                            'rgba(153, 102, 255, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(54, 162, 235, 1)',
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(255, 206, 86, 1)',
-                            'rgba(153, 102, 255, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Game Statistics Overview',
-                            font: {
-                                size: 16
-                            }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
+        // User state
+        let userState = {
+            registered: false,
+            id: null,
+            name: null,
+            email: null
+        };
         
         // Braze Configuration
         const brazeConfig = {
@@ -399,16 +423,7 @@
                     if (braze.isInitialized()) {
                         clearInterval(initInterval);
                         braze.openSession();
-                        
-                        // Update status indicator
-                        document.getElementById('braze-status').innerHTML = 
-                            '<i class="fas fa-check-circle"></i><div class="status-text">Braze Connected</div>';
-                        document.getElementById('braze-status').className = 'status connected';
-                        
                         addLog('Braze SDK initialized successfully', 'success');
-                        
-                        // Initialize push notifications after Braze is ready
-                        initializePush();
                     }
                 }, 100);
                 
@@ -417,6 +432,10 @@
                     clearInterval(initInterval);
                     if (!braze.isInitialized()) {
                         addLog('Braze initialization timeout', 'error');
+                    document.getElementById('registerBtn').disabled = true;
+                    document.getElementById('playBtn').disabled = true;
+                        document.getElementById('completeLevelBtn').disabled = true;
+                        document.getElementById('makePurchaseBtn').disabled = true;
                     }
                 }, 10000);
                 
@@ -425,39 +444,101 @@
             }
         }
         
-        // Initialize push notifications
-        function initializePush() {
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(() => {
-                        addLog('Service Worker registered for push notifications', 'success');
-                        
-                        // Update push status indicator
-                        document.getElementById('push-status').innerHTML = 
-                            '<i class="fas fa-check-circle"></i><div class="status-text">Push Ready</div>';
-                        document.getElementById('push-status').className = 'status connected';
-                    })
-                    .catch(err => {
-                        addLog('Service Worker registration failed: ' + err.message, 'error');
-                    });
-            } else {
-                addLog('Service Workers not supported in this browser', 'warning');
-            }
+        // Register service worker for push notifications
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                .then(() => addLog('Service Worker registered for push notifications', 'success'))
+                .catch(err => addLog('Service Worker registration failed: ' + err.message, 'error'));
+        }
+        
+        // Register user with Braze
+        function registerUser() {
+            const userId = document.getElementById('userId').value.trim();
+            const userName = document.getElementById('userName').value.trim();
+            const userEmail = document.getElementById('userEmail').value.trim();
             
-            // Check if push notifications are supported
-            if (!('Notification' in window)) {
-                addLog('Push notifications not supported in this browser', 'warning');
+            if (!userId || !userName || !userEmail) {
+                addLog('Please fill in all user fields', 'error');
                 return;
             }
             
-            // Request permission for notifications
-            Notification.requestPermission().then(function(permission) {
-                if (permission === 'granted') {
-                    addLog('Push notification permission granted', 'success');
-                } else {
-                    addLog('Push notification permission denied', 'warning');
-                }
-            });
+            // Set user in Braze
+            braze.changeUser(userId);
+            
+            // Set user attributes
+            braze.getUser().setFirstName(userName);
+            braze.getUser().setEmail(userEmail);
+            
+            // Update user state
+            userState = {
+                registered: true,
+                id: userId,
+                name: userName,
+                email: userEmail
+            };
+            
+            // Update UI
+            document.getElementById('displayUserId').textContent = userId;
+            document.getElementById('displayUserName').textContent = userName;
+            document.getElementById('displayUserEmail').textContent = userEmail;
+            document.getElementById('userInfo').style.display = 'block';
+            
+            // Log events
+            braze.logCustomEvent('user_registered');
+            addLog(`User registered: ${userName} (${userId})`, 'success');
+            
+            // Enable game buttons
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('completeLevelBtn').disabled = false;
+            document.getElementById('makePurchaseBtn').disabled = false;
+        }
+        
+        // Simulate gameplay
+        function playGame() {
+            if (!userState.registered) {
+                addLog('Please register a user first', 'error');
+                return;
+            }
+            
+            gameState.score += Math.floor(Math.random() * 100) + 50;
+            updateGameStats();
+            
+            braze.logCustomEvent('game_played', { score: gameState.score });
+            addLog(`Game played. Score: ${gameState.score}`, 'info');
+        }
+        
+        // Complete a level
+        function completeLevel() {
+            if (!userState.registered) {
+                addLog('Please register a user first', 'error');
+                return;
+            }
+            
+            gameState.level += 1;
+            gameState.score += 200;
+            updateGameStats();
+            
+            braze.logCustomEvent('level_completed', { level: gameState.level });
+            addLog(`Level ${gameState.level} completed!`, 'success');
+        }
+        
+        // Make a purchase
+        function makePurchase() {
+            if (!userState.registered) {
+                addLog('Please register a user first', 'error');
+                return;
+            }
+            
+            const purchaseAmount = (Math.floor(Math.random() * 50) + 10).toFixed(2);
+            
+            braze.logPurchase('in_game_purchase', purchaseAmount, 'USD');
+            addLog(`Purchase made: $${purchaseAmount}`, 'success');
+        }
+        
+        // Update game stats UI
+        function updateGameStats() {
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('level').textContent = gameState.level;
         }
         
         // Function to show Braze messages
@@ -484,28 +565,7 @@
             document.getElementById('in-app-message').classList.add('message-visible');
             
             // Log the message
-            addLog(`Braze in-app message: ${message}`, messageType);
-        }
-        
-        // Function to show push notification
-        function showPushNotification(title, body) {
-            const push = document.getElementById('push-notification');
-            document.getElementById('push-title').textContent = title;
-            document.getElementById('push-body').textContent = body;
-            
-            push.classList.add('push-visible');
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                push.classList.remove('push-visible');
-            }, 5000);
-            
-            // Also show browser notification if supported
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body: body });
-            }
-            
-            addLog(`Push notification: ${title} - ${body}`, 'info');
+            addLog(`Braze message: ${message}`, messageType);
         }
         
         // Function to add log entries
@@ -519,27 +579,23 @@
         }
         
         // Event listeners
+        document.getElementById('registerBtn').addEventListener('click', registerUser);
+        document.getElementById('playBtn').addEventListener('click', playGame);
+        document.getElementById('completeLevelBtn').addEventListener('click', completeLevel);
+        document.getElementById('makePurchaseBtn').addEventListener('click', makePurchase);
         document.getElementById('close-message').addEventListener('click', function() {
             document.getElementById('in-app-message').classList.remove('message-visible');
         });
         
-        document.getElementById('close-push').addEventListener('click', function() {
-            document.getElementById('push-notification').classList.remove('push-visible');
-        });
-        
         // Initialize the application
         window.addEventListener('load', function() {
-            initializeChart();
-            addLog('Game simulation ready. Braze integration initializing...', 'info');
+            // Disable game buttons until user is registered
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('completeLevelBtn').disabled = true;
+            document.getElementById('makePurchaseBtn').disabled = true;
             
-            // Simulate a push notification after 3 seconds for demo purposes
-            setTimeout(() => {
-                showPushNotification("Welcome to Game Simulation", "Braze integration is ready to receive messages");
-            }, 3000);
+            addLog('System ready. Please register a user to begin.', 'info');
         });
     </script>
-    
-    <!-- Font Awesome for icons -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </body>
 </html>
